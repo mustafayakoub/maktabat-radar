@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS file(
   changed_at REAL,
   first_scan INTEGER NOT NULL,
   is_baseline INTEGER NOT NULL DEFAULT 0,
+  first_seen_src TEXT NOT NULL DEFAULT 'scan',
   PRIMARY KEY(dir_id, name)
 ) WITHOUT ROWID;
 
@@ -100,7 +101,16 @@ def connect(path: Path | str, *, read_only: bool = False) -> sqlite3.Connection:
     conn.execute("PRAGMA busy_timeout=20000")
     if not read_only:
         conn.executescript(SCHEMA)
+        _migrate(conn)
     return conn
+
+
+def _migrate(conn: sqlite3.Connection) -> None:
+    """ترحيلاتٌ تُضافُ على قاعدةٍ قائمةٍ بلا إعادةِ بناء."""
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(file)")}
+    if "first_seen_src" not in cols:
+        conn.execute("ALTER TABLE file ADD COLUMN first_seen_src TEXT NOT NULL DEFAULT 'scan'")
+        conn.commit()
 
 
 def get_meta(conn: sqlite3.Connection, key: str, default=None):
@@ -142,7 +152,7 @@ def watching_since(conn: sqlite3.Connection, root_ids: list[str] | None = None) 
 # ── استعلاماتُ العرض ─────────────────────────────────────────────────────────
 _SELECT = """
 SELECT d.path AS dir, f.name, f.ext, f.kind, f.size, f.mtime,
-       f.first_seen, f.changed_at, f.gone_at, d.store, d.shelf, d.root_id
+       f.first_seen, f.first_seen_src, f.changed_at, f.gone_at, d.store, d.shelf, d.root_id
 FROM file f JOIN dir d ON d.id = f.dir_id
 """
 

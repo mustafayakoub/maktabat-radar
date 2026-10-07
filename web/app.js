@@ -216,7 +216,11 @@
       line.appendChild(stampNode(r.mtime));
       when.appendChild(line);
     } else if (fresh) {
-      when.appendChild(el('b', null, 'وصل ' + ago(r.first_seen)));
+      // كلُّ تاريخٍ يُعلنُ مصدرَه: فرقُ لقطتين أم تاريخُ إنشاءِ المِلفِّ على القرص
+      const byDisk = r.first_seen_src === 'ctime';
+      const b = el('b', null, (byDisk ? 'أُنشئ على القرص ' : 'وصل ') + ago(r.first_seen));
+      if (byDisk) b.title = 'تاريخُ إنشاءِ المِلفِّ على القرص — وهو تاريخُ وصولِه إليك';
+      when.appendChild(b);
       const line = el('div', null, 'تعديلُه ');
       line.appendChild(stampNode(r.mtime));
       when.appendChild(line);

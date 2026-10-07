@@ -20,8 +20,8 @@ from .config import Config, Root
 BATCH = 20_000
 
 UPSERT = """
-INSERT INTO file(dir_id,name,ext,kind,size,mtime,first_seen,last_seen,first_scan,is_baseline)
-VALUES(?,?,?,?,?,?,?,?,?,?)
+INSERT INTO file(dir_id,name,ext,kind,size,mtime,first_seen,last_seen,first_scan,is_baseline,first_seen_src)
+VALUES(?,?,?,?,?,?,?,?,?,?,?)
 ON CONFLICT(dir_id,name) DO UPDATE SET
   last_seen  = excluded.last_seen,
   gone_at    = NULL,
@@ -99,6 +99,10 @@ def run(cfg: Config, *, root_ids: list[str] | None = None, note: str = "",
         t0 = time.time()
         total = ev.count(search)
         is_base = 1 if root.id not in known else 0
+        # جذرٌ محلّيٌّ يُمسَحُ أوّلَ مرّة: تاريخُ إنشاءِ المِلفِّ على القرصِ هو تاريخُ وصولِه
+        # حقًّا — أصدقُ من «خطِّ أساسٍ» يُسقِطُ كتبَ اليومِ كلَّها. والشبكةُ تُستثنى: ملايينُ
+        # استدعاءِ stat عبر SMB تُقعِدُ المسح، فتبقى على فرقِ اللقطتين.
+        seed_ct = bool(is_base and root.store == "local")
         if is_base:
             fresh.append(root.id)
         say("⟳ %s: %d ملفًّا في النطاق (%.2fث للعدّ)%s" % (
@@ -121,6 +125,21 @@ def run(cfg: Config, *, root_ids: list[str] | None = None, note: str = "",
                 dirs.id_of(folder, root, shelf), name, ext, ext_type.get(ext, "أخرى"),
                 rec.get("size"), rec.get("mtime"), stamp, stamp, sid, is_base,
             ))
+            if seed_ct:
+                try:
+                    st = os.stat(path)
+                    born = getattr(st, "st_birthtime", None) or st.st_ctime
+                except OSError:
+                    born = None
+                if born:
+                    row = list(rows[-1])
+                    row[6] = born        # first_seen = تاريخُ الإنشاءِ على القرص
+                    row[9] = 0           # ليس خطَّ أساسٍ: له تاريخُ وصولٍ حقيقيّ
+                    rows[-1] = tuple(row) + ("ctime",)
+                else:
+                    rows[-1] = rows[-1] + ("scan",)
+            else:
+                rows[-1] = rows[-1] + ("scan",)
             n += 1
             if len(rows) >= BATCH:
                 conn.executemany(UPSERT, rows)
