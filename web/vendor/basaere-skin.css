@@ -1,0 +1,10 @@
+/* الرادار جناحٌ من بصائر (2026-09-24): رموز الألوان على هوية بصائر — كحلي وذهبي وبيج مصحفي.
+   يُحمَّل بعد design-system.css وmarsad.css فيعيد تعريف الرموز وحدها؛ النحاسيُّ (شمس الشعار)
+   وتركوازُ الرصد يبقيان لمسةً للجناح. */
+:root{--green:#122A4C;--head:#122A4C;--head-2:#2C4E7A;--line-strong:#122A4C;--surface-strong:#122A4C;
+  --on-strong:#F3EAD3;--green-2:#1B3A66;--green-3:#2C4E7A;--green-tint:#E3E8F1;--gold:#7C570F;--gold-light:#D4A64A;
+  --paper:#F7F1E3;--paper-2:#EFE6D2;--ink:#22314A;--muted:#5C6672;--card:#FFFDF7;--on-green:#D9E1EE;--rule:#E4DAC4}
+:root[data-theme="dark"]{--paper:#0C1628;--paper-2:#101D33;--card:#13223B;--ink:#E8E4D8;--muted:#A6ADB8;
+  --rule:#2A3A55;--green-tint:#18284A;--head:#E9DFC4;--head-2:#D4A64A;--line-strong:#3A5480;
+  --surface-strong:#10213D;--on-strong:#F3EAD3;--gold:#D4A64A;--gold-light:#E7C578;
+  --green:#10213D;--green-2:#1B3A66;--green-3:#2C4E7A;--on-green:#D9E1EE}

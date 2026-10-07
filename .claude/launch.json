@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "maktabat-radar",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "maktabat.server", "--no-browser"],
+      "port": 8731,
+      "env": { "PYTHONPATH": "src", "PYTHONIOENCODING": "utf-8" }
+    }
+  ]
+}

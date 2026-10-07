@@ -1,0 +1,94 @@
+{
+  "_": "مثالٌ — انسخه إلى config.json وعدِّلِ الجذورَ لجهازك (أو احذفه فيُكتشَفُ تلقائيًّا)",
+  "roots": [
+    {
+      "id": "nas",
+      "path": "\\\\m27\\m21",
+      "label": "السيرفر m21",
+      "store": "nas"
+    },
+    {
+      "id": "d",
+      "path": "D:\\",
+      "label": "قرص D",
+      "store": "local"
+    },
+    {
+      "id": "e",
+      "path": "E:\\",
+      "label": "قرص E",
+      "store": "local"
+    }
+  ],
+  "exclude": [
+    "\\Windows\\",
+    "\\Windows.old\\",
+    "\\AppData\\",
+    "\\ProgramData\\",
+    "\\Program Files\\",
+    "\\Program Files (x86)\\",
+    "\\$Recycle.Bin\\",
+    "\\System Volume Information\\",
+    "\\MSOCache\\",
+    "\\node_modules\\",
+    "\\__pycache__\\",
+    "\\site-packages\\",
+    "\\.git\\",
+    "\\.venv\\",
+    "\\Temp\\",
+    "\\tdata\\",
+    "\\@eaDir\\"
+  ],
+  "types": {
+    "كتاب": [
+      "pdf",
+      "djvu",
+      "djv",
+      "epub",
+      "mobi",
+      "azw",
+      "azw3",
+      "chm",
+      "fb2",
+      "doc",
+      "docx",
+      "rtf",
+      "odt",
+      "wps",
+      "pdb",
+      "lit"
+    ],
+    "مكتبة برنامج": [
+      "bok",
+      "sh3",
+      "shamela",
+      "mkt",
+      "nous"
+    ],
+    "قاعدة بيانات": [
+      "db",
+      "db3",
+      "sqlite",
+      "sqlite3",
+      "mdb",
+      "accdb",
+      "sql",
+      "bak",
+      "mdf",
+      "dbf"
+    ],
+    "حاوية": [
+      "rar",
+      "zip",
+      "7z",
+      "iso"
+    ]
+  },
+  "server": {
+    "host": "127.0.0.1",
+    "port": 8731
+  },
+  "scan": {
+    "page": 100000
+  }
+}

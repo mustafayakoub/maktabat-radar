@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- أيقونة تطبيق بصائر: الشعار v3 المعتمد على الكحلي، داخل المنطقة الآمنة للأيقونة المقنّعة (٤٠٪ من القطر) -->
+  <rect width="512" height="512" fill="#122A4C"/>
+  <defs><clipPath id="up"><path d="M -20 -20 H 280 V 130 C 190 122, 140 146, 96 138 C 62 132, 34 138, -20 142 Z"/></clipPath></defs>
+  <g transform="translate(82.11 107.33) scale(1.3274)">
+    <g clip-path="url(#up)">
+      <circle cx="130" cy="112" r="54" fill="#B87333"/>
+      <circle cx="130" cy="112" r="42" fill="#D4A64A"/>
+      <circle cx="130" cy="112" r="30" fill="#E7C578"/>
+      <circle cx="130" cy="112" r="18" fill="#F6E3B4"/>
+    </g>
+    <g fill="none" stroke="#3E8E75" stroke-linecap="round">
+      <path stroke-width="10" d="M 22 128 C 80 122, 130 158, 186 148 C 212 143, 228 140, 242 142"/>
+      <path stroke-width="7.5" d="M 18 148 C 76 154, 126 122, 182 132 C 210 137, 228 132, 244 128"/>
+    </g>
+  </g>
+</svg>

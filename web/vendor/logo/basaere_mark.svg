@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 200" width="260" height="200" role="img" aria-label="شعار بصائر">
+  <!-- بصائر v3 — طُوِّر من شكل لوغو الضحى الذي اعتمده المؤلف (2026-09-23):
+       الشمسُ الطبقية = النورُ الذي يغمر العالم، والموجتان الخضراوان = الماءُ والخضرةُ والكتاب.
+       نسخة الداكن (موج #3E8E75)؛ وعلى الفاتح: الموج #1E5240 والأقراص D9A64F/E5BC72/F0D49A/F8E7BF -->
+  <defs><clipPath id="up"><path d="M -20 -20 H 280 V 130 C 190 122, 140 146, 96 138 C 62 132, 34 138, -20 142 Z"/></clipPath></defs>
+      <g clip-path="url(#up)">
+      <circle cx="130" cy="112" r="54" fill="#B87333"/>
+      <circle cx="130" cy="112" r="42" fill="#D4A64A"/>
+      <circle cx="130" cy="112" r="30" fill="#E7C578"/>
+      <circle cx="130" cy="112" r="18" fill="#F6E3B4"/>
+      </g>
+      <g fill="none" stroke="#3E8E75" stroke-linecap="round">
+        <path stroke-width="10" d="M 22 128 C 80 122, 130 158, 186 148 C 212 143, 228 140, 242 142"/>
+        <path stroke-width="7.5" d="M 18 148 C 76 154, 126 122, 182 132 C 210 137, 228 132, 244 128"/>
+      </g>
+</svg>

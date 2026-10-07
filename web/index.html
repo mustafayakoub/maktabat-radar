@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>رادار المكتبات — ما استجدّ على الهارد والسيرفر</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#122A4C">
+<link rel="icon" href="/assets/vendor/logo/basaere_icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/assets/vendor/fonts/fonts.css">
+<link rel="stylesheet" href="/assets/vendor/design-system.css">
+<link rel="stylesheet" href="/assets/vendor/basaere-skin.css">
+<link rel="stylesheet" href="/assets/app.css">
+<script src="/assets/vendor/theme.js"></script>
+</head>
+<body>
+<a class="skip" href="#results">تجاوز إلى النتائج</a>
+
+<header class="mr-head">
+  <div class="mr-head-in">
+    <div class="mr-brand">
+      <img src="/assets/vendor/logo/basaere_icon.svg" alt="" width="40" height="40">
+      <div>
+        <strong>رادار المكتبات</strong>
+        <span>الهاردُ والسيرفرُ في فهرسٍ واحدٍ حيّ</span>
+      </div>
+    </div>
+    <div class="mr-chips" id="chips"></div>
+  </div>
+</header>
+
+<main class="mr-wrap">
+
+  <!-- الباحث -->
+  <section class="mr-seek" aria-label="البحث">
+    <div class="mr-seek-box">
+      <input id="q" type="search" autocomplete="off" spellcheck="false" autofocus
+             placeholder="اكتبِ اسمَ كتابٍ أو مؤلّفٍ أو قاعدةِ بيانات… (اضغط / للتركيز)">
+      <button id="clear" type="button" title="إفراغ" aria-label="إفراغ الحقل">✕</button>
+    </div>
+    <div class="mr-seek-foot">
+      <label class="mr-switch" title="يتسامح مع التشكيل والتطويل والياء المقصورة والتاء المربوطة">
+        <input type="checkbox" id="tolerant" checked> <span>تسامحٌ عربيّ</span>
+      </label>
+      <output id="seek-stat" class="mr-stat"></output>
+    </div>
+  </section>
+
+  <!-- الجديد: النوافذ والمقياس -->
+  <section class="mr-new" aria-label="الجديد">
+    <div class="mr-new-head">
+      <h2>ما استجدّ</h2>
+      <div class="mr-measure" role="group" aria-label="مقياس الجديد">
+        <button data-measure="arrival" class="on" title="بشهادة الرادار: ما لم يكن في المسح السابق وصار في هذا">وصل إلينا</button>
+        <button data-measure="mtime" title="ختمُ المِلفّ نفسه — يكذب للكتاب المنسوخ">تاريخ التعديل</button>
+      </div>
+    </div>
+    <div class="mr-windows" id="windows" role="group" aria-label="المدّة"></div>
+    <div class="mr-lists" id="lists" role="group" aria-label="نوع الحدث">
+      <button data-list="arrivals" class="on">وصلَ إلينا</button>
+      <button data-list="changed">تغيّرَ</button>
+      <button data-list="gone">اختفى</button>
+    </div>
+    <p class="mr-note" id="measure-note"></p>
+  </section>
+
+  <!-- المرشّحات -->
+  <section class="mr-filters" aria-label="المرشّحات">
+    <select id="f-store" aria-label="المخزن"><option value="">كلُّ المخازن</option></select>
+    <select id="f-root" aria-label="الجذر"><option value="">كلُّ الجذور</option></select>
+    <select id="f-shelf" aria-label="الرفّ"><option value="">كلُّ الرفوف</option></select>
+    <select id="f-kind" aria-label="النوع"><option value="">كلُّ الأنواع</option></select>
+    <select id="f-ext" aria-label="الصيغة"><option value="">كلُّ الصيغ</option></select>
+    <select id="f-sort" aria-label="الترتيب">
+      <option value="modified">الأحدثُ تعديلًا</option>
+      <option value="name">بالاسم</option>
+      <option value="size">الأكبرُ حجمًا</option>
+      <option value="path">بالمسار</option>
+    </select>
+    <button id="reset" type="button" class="mr-ghost">إفراغُ المرشّحات</button>
+    <a id="csv" class="mr-ghost" href="#" download>⤓ CSV</a>
+  </section>
+
+  <!-- النتائج -->
+  <section id="results" class="mr-results" aria-live="polite" aria-busy="false">
+    <div class="mr-results-head">
+      <h2 id="results-title">النتائج</h2>
+      <span id="results-count" class="mr-count"></span>
+    </div>
+    <div id="rows" class="mr-rows"></div>
+    <div class="mr-more"><button id="more" type="button" hidden>المزيد</button></div>
+  </section>
+
+  <!-- الإحصاء -->
+  <section class="mr-panels">
+    <div class="mr-panel">
+      <h3>المخازن</h3>
+      <div id="p-stores"></div>
+    </div>
+    <div class="mr-panel">
+      <h3>الأنواع</h3>
+      <div id="p-kinds"></div>
+    </div>
+    <div class="mr-panel mr-panel-wide">
+      <h3>أكبرُ الرفوف</h3>
+      <div id="p-shelves"></div>
+    </div>
+  </section>
+
+  <!-- المسح -->
+  <section class="mr-scan">
+    <div class="mr-scan-head">
+      <h3>المسح</h3>
+      <button id="scan" type="button">امسحِ الآن</button>
+    </div>
+    <p class="mr-note" id="scan-note"></p>
+    <pre id="scan-log" class="mr-log" hidden></pre>
+  </section>
+
+  <footer class="mr-foot">
+    <p>
+      البحثُ يسألُ فهرسَ <strong>Everything</strong> حيًّا في هذه اللحظة، و«وصل إلينا» يسألُ
+      سجلَّ الرادارِ المحلّيّ — فالشهادتان مختلفتان ولا تُخلَطان.
+      <span id="foot-since"></span>
+    </p>
+    <p class="mr-sign">د. مصطفى يعقوب — <a href="mailto:m.yakup@basaere.com">m.yakup@basaere.com</a></p>
+  </footer>
+</main>
+
+<script src="/assets/app.js"></script>
+</body>
+</html>

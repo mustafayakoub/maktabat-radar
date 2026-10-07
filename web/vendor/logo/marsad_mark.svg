@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240" role="img" aria-label="شعار المرصاد القرآني">
+  <!-- شعارُ مِرصاد (العدسة والنقطة) بتلوينٍ قرآنيٍّ مائز: تركوازُ الرصد + ذهبُ الاحتباك + نجمةُ الحزب في القلب -->
+  <circle cx="120" cy="120" r="71.76" fill="none" stroke="#0F2F2A" stroke-width="12.48"/>
+  <g stroke="#2EC4B6" stroke-width="4.68" stroke-linecap="round">
+    <line x1="120" y1="32.64" x2="120" y2="19.77"/>
+    <line x1="120" y1="207.36" x2="120" y2="220.23"/>
+    <line x1="32.64" y1="120" x2="19.77" y2="120"/>
+    <line x1="207.36" y1="120" x2="220.23" y2="120"/>
+  </g>
+  <g fill="none" stroke="#1F4D43" stroke-width="3.2" stroke-linejoin="round" opacity=".9">
+    <rect x="100" y="100" width="40" height="40"/>
+    <rect x="100" y="100" width="40" height="40" transform="rotate(45 120 120)"/>
+  </g>
+  <circle cx="160.56" cy="79.44" r="14.82" fill="#B87333"/>
+</svg>
