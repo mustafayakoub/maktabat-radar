@@ -24,7 +24,7 @@ import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from . import arabic, config as conf, db, everything as ev, scan as scanner, schedule, snapshot
+from . import arabic, config as conf, db, everything as ev, publish, scan as scanner, schedule, snapshot
 
 WEB = Path(__file__).resolve().parents[2] / "web"
 MAX_PAGE = 500
@@ -241,7 +241,8 @@ class Radar:
     def key_state(self) -> dict:
         """هل كُتِبَ المفتاح؟ — لا تُعادُ قيمتُه أبدًا، الوجودُ فقط."""
         key = snapshot.read_key()
-        return {"exists": bool(key), "path": str(snapshot.KEY_FILE)}
+        return {"exists": bool(key), "path": str(snapshot.KEY_FILE),
+                "can_publish": publish.available(self.cfg)}
 
     def save_key(self, payload: dict) -> dict:
         """
@@ -257,7 +258,11 @@ class Radar:
         if len(key) < 8:
             return {"ok": False, "error": "المفتاحُ قصيرٌ — ثمانيةُ محارفَ فأكثر"}
         snapshot.KEY_FILE.write_text(key + chr(10), encoding="utf-8")
-        return {"ok": True, "length": len(key)}
+        out = {"ok": True, "saved": True}
+        # والسرُّ نفسُه على الموقع — فلا يكتبه المؤلّفُ مرّتين ولا يفتحُ لوحةَ تحكّم
+        if payload.get("remote", True) and publish.available(self.cfg):
+            out["remote"] = publish.set_secret(self.cfg, key)
+        return out
 
     def push_snapshot(self, payload: dict) -> dict:
         key = snapshot.read_key()

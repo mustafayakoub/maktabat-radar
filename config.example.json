@@ -90,5 +90,11 @@
   },
   "scan": {
     "page": 100000
+  },
+  "publish": {
+    "wrangler_dir": "اتركْه فارغًا إن لم يكن لك موقعٌ على Cloudflare Pages",
+    "project": "",
+    "secret": "MAKTABAT_KEY",
+    "url": "https://example.com"
   }
 }

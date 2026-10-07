@@ -404,11 +404,19 @@
   }
 
   // ── الجدولة ─────────────────────────────────────────────────────────────
+  /** «كلَّ ساعة» لا «كلَّ ١ ساعة»، و«كلَّ ساعتين» لا «كلَّ ٢ ساعة». */
+  function arabicEvery(minutes) {
+    const pick = (n, one, two, many) => (n === 1 ? one : n === 2 ? two : num(n) + ' ' + (n <= 10 ? many : one));
+    if (minutes % 1440 === 0) return pick(minutes / 1440, 'يوم', 'يومين', 'أيّام');
+    if (minutes % 60 === 0) return pick(minutes / 60, 'ساعة', 'ساعتين', 'ساعات');
+    return pick(minutes, 'دقيقة', 'دقيقتين', 'دقائق');
+  }
+
   function schedText(st) {
     if (st.error) return '⛔ تعذّر قراءةُ حالةِ المهمّة — ' + st.error;
     if (!st.exists) return 'لا مسحَ آليًّا الآن. والنوافذُ الزمنيّةُ لا تمتلئُ إلّا بمسحٍ دوريّ — فعّلْه.';
     const bits = [];
-    if (st.minutes) bits.push('كلَّ ' + (st.minutes % 60 === 0 && st.minutes >= 60 ? num(st.minutes / 60) + ' ساعة' : num(st.minutes) + ' دقيقة'));
+    if (st.minutes) bits.push('كلَّ ' + arabicEvery(st.minutes));
     if (st.last) bits.push('آخرُ تشغيلٍ ' + ago(new Date(st.last).getTime() / 1000));
     if (st.next) bits.push('التالي ' + stamp(new Date(st.next).getTime() / 1000));
     if (st.result !== 0 && st.result != null) bits.push('آخرُ نتيجةٍ ' + num(st.result));
@@ -451,8 +459,10 @@
     try {
       const st = await api('/api/key');
       $('#key-note').textContent = st.exists
-        ? '✓ المفتاحُ محفوظٌ على جهازك — والمسحُ الدوريُّ يرفعُ اللقطةَ وحدَه. (اكتبِ المفتاحَ نفسَه في إعداداتِ المشروع على كلاودفلير.)'
-        : 'لم يُكتَبِ المفتاحُ بعد. اكتبْه هنا واكتبِ المثلَ في إعداداتِ المشروع على كلاودفلير، فتعملَ صفحةُ /maktabat.';
+        ? '✓ المفتاحُ محفوظٌ على جهازك — والمسحُ الدوريُّ يرفعُ اللقطةَ وحدَه.'
+        : (st.can_publish
+          ? 'لم يُكتَبِ المفتاحُ بعد. اكتبْه هنا مرّةً واحدةً — يُحفَظُ على جهازك ويُضبَطُ على الموقعِ معًا.'
+          : 'لم يُكتَبِ المفتاحُ بعد. اكتبْه هنا، واضبطِ المثلَ على الموقعِ بنفسك.');
     } catch (e) { $('#key-note').textContent = e.message; }
   }
 
@@ -463,9 +473,14 @@
     $('#key-note').textContent = 'جارٍ الحفظ…';
     try {
       const out = await api('/api/key', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key }) });
-      $('#key-note').textContent = out.ok
-        ? (out.cleared ? '✓ مُحي المفتاح.' : '✓ حُفِظ على جهازك وحدَه.')
-        : '⛔ ' + (out.error || 'تعذّر الحفظ');
+      if (!out.ok) {
+        $('#key-note').textContent = '⛔ ' + (out.error || 'تعذّر الحفظ');
+      } else if (out.cleared) {
+        $('#key-note').textContent = '✓ مُحي المفتاحُ من جهازك (ويبقى على الموقعِ حتّى تحذفَه هناك).';
+      } else {
+        const r = out.remote;
+        $('#key-note').textContent = '✓ حُفِظ على جهازك' + (r ? (r.ok ? ' وضُبط على الموقع — صفحةُ /maktabat صارت تعمل.' : ' — لكنْ تعذّر ضبطُه على الموقع: ' + (r.error || r.message)) : '.');
+      }
       setTimeout(refreshKey, 900);
     } catch (e) { $('#key-note').textContent = '⛔ ' + e.message; }
   });
