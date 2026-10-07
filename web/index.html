@@ -26,6 +26,26 @@
       </div>
     </div>
     <div class="mr-chips" id="chips"></div>
+    <button id="pulse" class="mr-radar" type="button"
+            title="حدِّثِ الآن — مسحٌ كاملٌ ثمّ تحديثُ العرض" aria-label="تحديثٌ آنيّ">
+      <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+        <defs>
+          <linearGradient id="mrSweep" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="currentColor" stop-opacity=".55"/>
+            <stop offset="100%" stop-color="currentColor" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <g class="mr-grid">
+          <circle cx="24" cy="24" r="21"/><circle cx="24" cy="24" r="14"/><circle cx="24" cy="24" r="7"/>
+          <line x1="3" y1="24" x2="45" y2="24"/><line x1="24" y1="3" x2="24" y2="45"/>
+        </g>
+        <g class="mr-sweep"><path d="M24 24 L45 24 A21 21 0 0 0 38.85 9.15 Z" fill="url(#mrSweep)"/>
+          <line x1="24" y1="24" x2="45" y2="24"/></g>
+        <circle class="mr-blip" cx="33.5" cy="15.5" r="2.1"/>
+        <circle class="mr-blip b2" cx="15" cy="31" r="1.7"/>
+      </svg>
+    </button>
+
   </div>
 </header>
 
@@ -86,6 +106,7 @@
     <div class="mr-results-head">
       <h2 id="results-title">النتائج</h2>
       <span id="results-count" class="mr-count"></span>
+      <span class="mr-hint">نقرتان على الصفِّ يفتحان الكتاب — وEnter مثلُهما، وCtrl+Enter يفتح مجلّده</span>
     </div>
     <div id="rows" class="mr-rows"></div>
     <div class="mr-more"><button id="more" type="button" hidden>المزيد</button></div>

@@ -71,7 +71,25 @@ def main(argv=None) -> int:
         check("الصنفُ يُبنى بنقاطِ الترميزِ لا بمدًى ملصوق",
               "-" not in arabic.tolerant_pattern("ايه").split("[")[1].split("]")[0])
 
-    section("③ سجلُّ الوصول")
+    section("③ الواجهةُ نحويًّا")
+    # عطبٌ نحويٌّ في app.js يُفرِغُ الصفحةَ بلا صوتٍ ولا رسالةٍ للمؤلّف — فيُفحَصُ آليًّا
+    import shutil
+    import subprocess
+    node = shutil.which("node")
+    web = conf.ROOT / "web"
+    if not node:
+        print("  (تُخطّى — لا node على المسار)")
+    else:
+        for js in sorted(web.glob("*.js")):
+            out = subprocess.run([node, "--check", str(js)], capture_output=True, text=True,
+                                 encoding="utf-8", errors="replace")
+            check("%s سليمٌ نحويًّا" % js.name, out.returncode == 0,
+                  (out.stderr or "").strip().splitlines()[0][:70] if out.returncode else "")
+        html = (web / "index.html").read_text(encoding="utf-8")
+        for need in ("id=\"pulse\"", "id=\"skey\"", "id=\"rows\"", "id=\"windows\""):
+            check("العنصرُ %s موجودٌ في الصفحة" % need.split('"')[1], need in html)
+
+    section("④ سجلُّ الوصول")
     if not cfg.db_path.exists():
         check("القاعدةُ موجودة", False, "لا سجلَّ بعد — شغّلْ `python -m maktabat.scan`")
     else:
@@ -102,7 +120,7 @@ def main(argv=None) -> int:
         finally:
             conn.close()
 
-    section("④ الخادمُ الحيّ")
+    section("⑤ الخادمُ الحيّ")
     if not args.server:
         print("  (تُخطّى — مرّرْ --server http://127.0.0.1:8731 لفحصِها)")
     else:

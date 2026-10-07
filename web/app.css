@@ -208,3 +208,40 @@ h3 { font-size: 1.05rem; }
   .mr-chips { font-size: .72rem; }
   .mr-seek-box input { font-size: 1rem; }
 }
+
+/* ── رمزُ الرادار: التحديثُ الآنيّ ─────────────────────────────────────────
+   الكنسةُ تدورُ دائمًا دورةً هادئةً (فالرادارُ حيٌّ)، وتتسارعُ وتُضيءُ أثناءَ المسح.
+   وتُسكَّنُ كلُّها لمن طلبَ تقليلَ الحركةِ في نظامه. */
+.mr-radar {
+  flex: none; width: 48px; height: 48px; padding: 4px; cursor: pointer;
+  background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.2);
+  border-radius: 50%; color: var(--gold-light); line-height: 0;
+  transition: border-color .2s, background .2s, transform .15s;
+}
+.mr-radar:hover { border-color: var(--gold-light); background: rgba(255,255,255,.14); }
+.mr-radar:active { transform: scale(.94); }
+.mr-radar[disabled] { cursor: progress; }
+.mr-radar svg { width: 100%; height: 100%; overflow: visible; }
+.mr-radar .mr-grid { fill: none; stroke: currentColor; stroke-width: 1; opacity: .34; }
+.mr-radar .mr-sweep { transform-origin: 24px 24px; animation: mr-spin 4s linear infinite; }
+.mr-radar .mr-sweep line { stroke: currentColor; stroke-width: 1.6; opacity: .9; }
+.mr-radar .mr-blip { fill: currentColor; opacity: 0; animation: mr-blip 4s linear infinite; }
+.mr-radar .mr-blip.b2 { animation-delay: 2.1s; }
+.mr-radar.on { color: #9ad8b4; border-color: #9ad8b4; }
+.mr-radar.on .mr-sweep { animation-duration: 1.1s; }
+.mr-radar.on .mr-blip { animation-duration: 1.1s; }
+.mr-radar.done { color: #9ad8b4; }
+@keyframes mr-spin { from { transform: rotate(0deg); } to { transform: rotate(-360deg); } }
+@keyframes mr-blip { 0%,6% { opacity: .95; } 45%,100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .mr-radar .mr-sweep, .mr-radar .mr-blip { animation: none; }
+  .mr-radar .mr-blip { opacity: .75; }
+}
+
+/* الصفُّ يُفتَحُ بنقرتين كما في Everything */
+.mr-row { cursor: default; }
+.mr-row:not(.gone) { cursor: pointer; }
+.mr-row:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+.mr-row.opening { background: var(--green-tint); }
+.mr-hint { font-family: var(--kufi); font-size: .74rem; color: var(--muted); }
+@media (max-width: 720px) { .mr-hint { display: none; } }

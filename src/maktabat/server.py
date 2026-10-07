@@ -41,6 +41,37 @@ SORTS = {
     "size": ev.SORT_SIZE_DESC,
 }
 
+# فحصُ وصلِ الجذور: `isdir` على مشاركةٍ مفصولةٍ يحجبُ ثوانيَ حتّى تنتهي مهلةُ SMB،
+# فيصيرُ فتحُ الصفحةِ رهينةَ الشبكة. فيُقاسُ في خيطٍ بمهلةٍ قصيرةٍ ويُخزَّنُ لدقيقة.
+_ONLINE_TTL = 60.0
+_ONLINE_WAIT = 0.6
+_online: dict = {}
+_online_pool = None
+
+
+def _is_online(path: str) -> bool:
+    global _online_pool
+    now = time.time()
+    seen = _online.get(path)
+    if seen and now - seen[0] < _ONLINE_TTL:
+        return seen[1]
+    if _online_pool is None:
+        from concurrent.futures import ThreadPoolExecutor
+        _online_pool = ThreadPoolExecutor(max_workers=4, thread_name_prefix="online")
+
+    def probe():
+        ok = os.path.isdir(path)
+        _online[path] = (time.time(), ok)
+        return ok
+
+    fut = _online_pool.submit(probe)
+    try:
+        return fut.result(timeout=_ONLINE_WAIT)
+    except Exception:
+        # لم يُجِبْ في المهلة: نُعيدُ آخرَ ما عُرِف (أو «مفصول») والخيطُ يُكمِلُ ويُحدِّث
+        return seen[1] if seen else False
+
+
 _scan_state: dict = {"running": False, "lines": [], "result": None, "started": None}
 _scan_lock = threading.Lock()
 _ev_lock = threading.Lock()  # استعلامٌ واحدٌ في كلِّ لحظةٍ: نافذةُ IPC ليست للتزاحم
@@ -103,8 +134,9 @@ class Radar:
         alive = ev.alive()
         out: dict = {
             "alive": alive,
-            "roots": [{"id": r.id, "path": r.path, "label": r.label, "store": r.store}
-                      for r in self.cfg.roots],
+            # وصلُ الجذرِ يُقاسُ لا يُفترَض: جذرٌ مفصولٌ يُترَكُ بلا مسحٍ فيجبُ أن يُعلَن
+            "roots": [{"id": r.id, "path": r.path, "label": r.label, "store": r.store,
+                       "online": _is_online(r.path)} for r in self.cfg.roots],
             "types": {k: v for k, v in self.cfg.types.items()},
             "exts": self.cfg.all_exts,
             "now": time.time(),

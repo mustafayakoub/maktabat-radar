@@ -75,6 +75,9 @@
     if (st.live && st.live.scope != null) add(`في النطاق <b>${num(st.live.scope)}</b> مِلفًّا`);
     if (st.totals) add(`المسجَّل <b>${num(st.totals.files)}</b> — ${size(st.totals.bytes)}`);
     if (st.scan) add(`آخرُ مسحٍ <b>${ago(st.scan.finished)}</b>`);
+    (st.roots || []).filter((r) => r.online === false).forEach((r) => {
+      add(`<b>${r.label}</b> غيرُ موصول — لا يُمسَح`, 'bad');
+    });
     if (st.db) add(`السجلّ <b>${size(st.db.bytes)}</b>`);
   }
 
@@ -192,6 +195,16 @@
   }
 
   // ── الصفوف ──────────────────────────────────────────────────────────────
+  async function openPath(path, mode, node) {
+    if (node) node.classList.add('opening');
+    try {
+      const out = await api('/api/open', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path, mode }) });
+      if (!out.ok) alert(out.error || 'تعذّر الفتح');
+    } catch (e) { alert(e.message); } finally {
+      if (node) setTimeout(() => node.classList.remove('opening'), 400);
+    }
+  }
+
   function rowNode(r) {
     const gone = !!r.gone_at;
     const fresh = !gone && r.first_seen && !r.is_baseline;
@@ -234,12 +247,11 @@
     const mk = (label, title, mode) => {
       const b = el('button', null, label);
       b.type = 'button'; b.title = title;
-      b.addEventListener('click', async () => {
+      b.addEventListener('click', async (ev) => {
+        ev.stopPropagation();          // لا تُحسَبُ نقرةً على الصفّ
         b.disabled = true;
-        try {
-          const out = await api('/api/open', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: r.path, mode }) });
-          if (!out.ok) alert(out.error || 'تعذّر الفتح');
-        } catch (e) { alert(e.message); } finally { b.disabled = false; }
+        await openPath(r.path, mode, node);
+        b.disabled = false;
       });
       return b;
     };
@@ -249,11 +261,23 @@
     }
     const copy = el('button', null, '⧉');
     copy.type = 'button'; copy.title = 'نسخُ المسار';
-    copy.addEventListener('click', async () => {
+    copy.addEventListener('click', async (ev) => {
+      ev.stopPropagation();
       try { await navigator.clipboard.writeText(r.path); copy.textContent = '✓'; setTimeout(() => { copy.textContent = '⧉'; }, 1200); } catch (e) { alert('تعذّر النسخ'); }
     });
     acts.appendChild(copy);
     node.appendChild(acts);
+
+    // طرازُ Everything: نقرتان تفتحان المِلفّ، وEnter مثلُهما، وCtrl+Enter يفتحُ مجلّدَه
+    if (!gone) {
+      node.tabIndex = 0;
+      node.addEventListener('dblclick', () => openPath(r.path, 'file', node));
+      node.addEventListener('keydown', (ev) => {
+        if (ev.key !== 'Enter') return;
+        ev.preventDefault();
+        openPath(r.path, ev.ctrlKey || ev.altKey ? 'folder' : 'file', node);
+      });
+    }
     return node;
   }
 
@@ -500,6 +524,55 @@
         : '⛔ ' + out.error;
     } catch (e) { $('#key-note').textContent = '⛔ ' + e.message; } finally { btn.disabled = false; }
   });
+
+  // ── رمزُ الرادار: التحديثُ الآنيّ ────────────────────────────────────────
+  let pulsing = false;
+  async function pulse() {
+    if (pulsing) return;
+    const btn = $('#pulse');
+    pulsing = true;
+    btn.classList.add('on');
+    btn.classList.remove('done');
+    btn.disabled = true;
+    const t0 = Date.now();
+    const tick = setInterval(() => { btn.title = 'جارٍ المسح… ' + num(Math.round((Date.now() - t0) / 1000)) + ' ثانية'; }, 1000);
+    try {
+      const started = await api('/api/scan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      if (!started.ok && !/جارٍ/.test(started.error || '')) throw new Error(started.error || 'تعذّر المسح');
+      // ننتظرُ انتهاءَ المسحِ فعلًا — لا نُعلنُ تحديثًا لم يتمّ
+      for (;;) {
+        await new Promise((r) => setTimeout(r, 900));
+        const st = await api('/api/scan/status');
+        $('#scan-log').hidden = false;
+        $('#scan-log').textContent = (st.lines || []).join(String.fromCharCode(10));
+        if (!st.running) {
+          const r = st.result || {};
+          if (r.error) throw new Error(r.error);
+          const left = (r.skipped || []).length
+            ? ` — ⚠ لم يُمسَح (غيرُ موصول): ${(r.skipped || []).map((id) => { const f = (S.state && S.state.roots || []).find((x) => x.id === id); return f ? f.label : id; }).join('، ')}`
+            : '';
+          $('#scan-note').textContent = `✓ ${num(r.seen)} ملفًّا في ${num(r.secs, 1)} ثانية — واصلٌ جديد ${num(r.added)}، متغيّر ${num(r.changed)}، مفقود ${num(r.gone)}` + left;
+          break;
+        }
+      }
+      await refreshState();
+      await load();
+      // وتصعدُ اللقطةُ إلى الصفحةِ الخاصّةِ إن كان المفتاحُ مكتوبًا
+      api('/api/key').then((k) => { if (k.exists) api('/api/snapshot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }).catch(() => {}); });
+      btn.classList.add('done');
+      setTimeout(() => btn.classList.remove('done'), 2500);
+    } catch (e) {
+      $('#scan-note').textContent = '⛔ ' + e.message;
+    } finally {
+      clearInterval(tick);
+      btn.classList.remove('on');
+      btn.disabled = false;
+      btn.title = 'حدِّثِ الآن — مسحٌ كاملٌ ثمّ تحديثُ العرض';
+      pulsing = false;
+    }
+  }
+
+  $('#pulse').addEventListener('click', pulse);
 
   // ── الإقلاع ─────────────────────────────────────────────────────────────
   recall();
