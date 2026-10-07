@@ -124,9 +124,9 @@ def discover_roots() -> list[Root]:
     import os
 
     out: list[Root] = []
-    nas = "\\\\m27\\m21"
-    if os.path.isdir(nas):
-        out.append(Root(id="nas", path=nas, label="السيرفر m21", store="nas"))
+    nas = os.environ.get("MAKTABAT_NAS", "")  # مشاركةُ الشبكةِ تُسمّى في config.json
+    if nas and os.path.isdir(nas):
+        out.append(Root(id="nas", path=nas, label="السيرفر", store="nas"))
     for letter in string.ascii_uppercase:
         if letter == "C":
             continue

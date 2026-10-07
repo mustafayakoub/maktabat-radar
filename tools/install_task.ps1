@@ -1,4 +1,4 @@
-<#
+﻿<#
   يُنشئ مهمّةَ ويندوز تمسحُ المكتباتِ كلَّ ساعة، فيعرفُ الرادارُ متى وصلَ كلُّ كتاب.
 
   التشغيل (بصلاحيّات المستخدم نفسِه، لا يلزم مديرُ النظام):
@@ -7,7 +7,7 @@
       powershell -ExecutionPolicy Bypass -File tools\install_task.ps1 -Remove
 
   ⚠ المهمّةُ تُسجَّلُ باسم المستخدم الحاليّ لتصلَ إلى مشاركةِ السيرفر؛ ومهمّةٌ تعملُ
-  بحساب SYSTEM لا ترى `\\m27\m21` فلا تُستعمَل.
+  بحساب SYSTEM لا ترى مشاركةَ الشبكة فلا تُستعمَل.
 #>
 param(
     [int]$EveryMinutes = 60,
@@ -15,6 +15,7 @@ param(
     [string]$TaskName = "رادار المكتبات — مسحٌ دوريّ"
 )
 
+$OutputEncoding = [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
 $cmd = Join-Path $root "tools\scan.cmd"

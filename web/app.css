@@ -160,6 +160,24 @@ h3 { font-size: 1.05rem; }
   border: 1px solid var(--head); border-radius: 2rem; background: var(--surface-strong); color: var(--on-strong);
 }
 .mr-scan-head button[disabled] { opacity: .55; cursor: progress; }
+.mr-sched { margin-top: .7rem; padding-top: .7rem; border-top: 1px dashed var(--rule); }
+.mr-sched-row { display: flex; align-items: center; gap: .45rem; flex-wrap: wrap; font-family: var(--kufi); font-size: .88rem; }
+.mr-sched-row input[type=number] {
+  width: 5.5rem; min-height: 44px; padding: .35rem .6rem; text-align: center;
+  border: 1px solid var(--rule); border-radius: .5rem; background: var(--paper); color: var(--ink);
+  font-family: var(--kufi); font-size: 1rem;
+}
+.mr-sched-row select {
+  min-height: 44px; padding: .35rem .6rem; border: 1px solid var(--rule);
+  border-radius: .5rem; background: var(--paper); color: var(--ink); font-family: var(--kufi);
+}
+.mr-sched-row button {
+  min-height: 44px; padding: .4rem 1.1rem; border-radius: 2rem; cursor: pointer;
+  font-family: var(--kufi); border: 1px solid var(--head);
+  background: var(--surface-strong); color: var(--on-strong);
+}
+.mr-sched-row button.mr-ghost { background: var(--card); color: var(--ink); border-color: var(--rule); }
+
 .mr-log {
   direction: ltr; unicode-bidi: plaintext; text-align: left; font-family: var(--latin);
   font-size: .78rem; background: var(--paper-2); border: 1px solid var(--rule);

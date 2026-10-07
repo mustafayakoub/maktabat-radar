@@ -114,6 +114,22 @@
       <button id="scan" type="button">امسحِ الآن</button>
     </div>
     <p class="mr-note" id="scan-note"></p>
+
+    <div class="mr-sched">
+      <div class="mr-sched-row">
+        <label for="every">المسحُ الآليُّ كلَّ</label>
+        <input id="every" type="number" min="5" max="10080" step="5" value="60" inputmode="numeric">
+        <select id="unit" aria-label="الوحدة">
+          <option value="1">دقيقة</option>
+          <option value="60" selected>ساعة</option>
+          <option value="1440">يوم</option>
+        </select>
+        <button id="sched-on" type="button">فعِّلْ</button>
+        <button id="sched-off" type="button" class="mr-ghost">أوقِفْ</button>
+      </div>
+      <p class="mr-note" id="sched-note">…</p>
+    </div>
+
     <pre id="scan-log" class="mr-log" hidden></pre>
   </section>
 

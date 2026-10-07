@@ -151,7 +151,7 @@
     if (!t) { bars($('#p-stores'), [], 1); bars($('#p-kinds'), [], 1); bars($('#p-shelves'), [], 1); return; }
     const maxS = Math.max(1, ...t.stores.map((s) => s.n));
     bars($('#p-stores'), t.stores.map((s) => ({
-      label: s.store === 'nas' ? 'السيرفر m21' : 'الهارد المحلّيّ',
+      label: s.store === 'nas' ? 'السيرفر' : 'الهارد المحلّيّ',
       value: num(s.n) + ' — ' + size(s.bytes), weight: s.n,
       onClick: () => { S.store = s.store; $('#f-store').value = s.store; S.offset = 0; load(); },
     })), maxS);
@@ -403,10 +403,54 @@
     } catch (e) { $('#scan').disabled = false; $('#scan-note').textContent = e.message; }
   }
 
+  // ── الجدولة ─────────────────────────────────────────────────────────────
+  function schedText(st) {
+    if (st.error) return '⛔ تعذّر قراءةُ حالةِ المهمّة — ' + st.error;
+    if (!st.exists) return 'لا مسحَ آليًّا الآن. والنوافذُ الزمنيّةُ لا تمتلئُ إلّا بمسحٍ دوريّ — فعّلْه.';
+    const bits = [];
+    if (st.minutes) bits.push('كلَّ ' + (st.minutes % 60 === 0 && st.minutes >= 60 ? num(st.minutes / 60) + ' ساعة' : num(st.minutes) + ' دقيقة'));
+    if (st.last) bits.push('آخرُ تشغيلٍ ' + ago(new Date(st.last).getTime() / 1000));
+    if (st.next) bits.push('التالي ' + stamp(new Date(st.next).getTime() / 1000));
+    if (st.result !== 0 && st.result != null) bits.push('آخرُ نتيجةٍ ' + num(st.result));
+    return '⏱ مفعَّلٌ — ' + bits.join(' — ');
+  }
+
+  async function refreshSchedule() {
+    try {
+      const st = await api('/api/schedule');
+      $('#sched-note').textContent = schedText(st);
+      if (st.exists && st.minutes) {
+        const unit = st.minutes % 1440 === 0 ? 1440 : (st.minutes % 60 === 0 ? 60 : 1);
+        $('#unit').value = String(unit);
+        $('#every').value = String(st.minutes / unit);
+      }
+    } catch (e) { $('#sched-note').textContent = e.message; }
+  }
+
+  $('#sched-on').addEventListener('click', async () => {
+    const minutes = Math.round(Number($('#every').value || 60) * Number($('#unit').value || 60));
+    $('#sched-note').textContent = 'جارٍ التثبيت…';
+    try {
+      const out = await api('/api/schedule', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ minutes }) });
+      $('#sched-note').textContent = out.ok ? '✓ ' + (out.message || 'سُجّلت المهمّة') : '⛔ ' + (out.message || 'تعذّر التثبيت');
+      setTimeout(refreshSchedule, 1200);
+    } catch (e) { $('#sched-note').textContent = '⛔ ' + e.message; }
+  });
+
+  $('#sched-off').addEventListener('click', async () => {
+    $('#sched-note').textContent = 'جارٍ الإلغاء…';
+    try {
+      const out = await api('/api/schedule', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ remove: true }) });
+      $('#sched-note').textContent = out.ok ? '✓ ' + (out.message || 'أُلغيت') : '⛔ ' + (out.message || 'تعذّر الإلغاء');
+      setTimeout(refreshSchedule, 1000);
+    } catch (e) { $('#sched-note').textContent = '⛔ ' + e.message; }
+  });
+
   // ── الإقلاع ─────────────────────────────────────────────────────────────
   recall();
   document.querySelectorAll('.mr-measure button').forEach((b) => b.classList.toggle('on', b.dataset.measure === S.measure));
   document.querySelectorAll('.mr-lists button').forEach((b) => b.classList.toggle('on', b.dataset.list === S.list));
+  refreshSchedule();
   refreshState().then(() => {
     load();
     api('/api/scan/status').then((st) => { if (st.running) { $('#scan').disabled = true; $('#scan-log').hidden = false; pollScan(); } });

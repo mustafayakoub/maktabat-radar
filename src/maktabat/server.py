@@ -24,7 +24,7 @@ import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from . import arabic, config as conf, db, everything as ev, scan as scanner
+from . import arabic, config as conf, db, everything as ev, scan as scanner, schedule
 
 WEB = Path(__file__).resolve().parents[2] / "web"
 MAX_PAGE = 500
@@ -358,6 +358,8 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(self.radar.recent(params))
             elif route == "/api/shelves":
                 self._json(self.radar.shelves(params))
+            elif route == "/api/schedule":
+                self._json(schedule.status())
             elif route == "/api/scan/status":
                 self._json(self.radar.scan_status())
             elif route == "/api/export.csv":
@@ -393,6 +395,11 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(self.radar.open_path(payload))
             elif route == "/api/scan":
                 self._json(self.radar.start_scan(payload))
+            elif route == "/api/schedule":
+                if payload.get("remove"):
+                    self._json(schedule.remove())
+                else:
+                    self._json(schedule.install(payload.get("minutes", 60)))
             else:
                 self._json({"error": "لا مسارَ بهذا الاسم"}, 404)
         except Exception as exc:
