@@ -36,6 +36,7 @@ class Config:
     host: str = "127.0.0.1"
     port: int = 8731
     page: int = 100_000
+    web_origin: str = ""
     db_path: Path = field(default_factory=lambda: DATA_DIR / "maktabat.db")
     source: Path | None = None
 
@@ -162,6 +163,7 @@ def load(path: Path | str | None = None) -> Config:
         host=srv.get("host", "127.0.0.1"),
         port=int(srv.get("port", 8731)),
         page=int(raw.get("scan", {}).get("page", 100_000)),
+        web_origin=(srv.get("web_origin") or "").rstrip("/"),
     )
     db = raw.get("db_path")
     if db:
@@ -179,7 +181,7 @@ def save_default(path: Path | str | None = None) -> Path:
         "roots": [{"id": r.id, "path": r.path, "label": r.label, "store": r.store} for r in cfg.roots],
         "exclude": cfg.exclude,
         "types": cfg.types,
-        "server": {"host": cfg.host, "port": cfg.port},
+        "server": {"host": cfg.host, "port": cfg.port, "web_origin": cfg.web_origin},
         "scan": {"page": cfg.page},
     }
     p.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")

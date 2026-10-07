@@ -82,6 +82,10 @@ class Radar:
         self.cfg = cfg
 
     # ── مساعداتٌ ─────────────────────────────────────────────────────────────
+    @property
+    def web_origin(self) -> str:
+        return getattr(self.cfg, "web_origin", "") or ""
+
     def conn(self):
         return db.connect(self.cfg.db_path, read_only=True)
 
@@ -309,6 +313,34 @@ class Radar:
         except Exception as exc:
             return {"ok": False, "error": "%s: %s" % (type(exc).__name__, exc)}
 
+    def open_by_name(self, payload: dict) -> dict:
+        """
+        تفتحُ كتابًا بالاسمِ والرفِّ — لا بالمسار. لأنّ اللقطةَ المرفوعةَ إلى صفحةِ الويبِ
+        **لا تحملُ مسارًا** بالتصميم، فالحلُّ أن يحلَّ الجهازُ الاسمَ من سجلِّه هو.
+        وإن تشابهَ اسمان في رفٍّ واحدٍ لم يُفتَحْ شيءٌ ويُعلَنُ التباسُ الاسم.
+        """
+        name = (payload.get("name") or "").strip()
+        shelf = (payload.get("shelf") or "").strip()
+        if not name:
+            return {"ok": False, "error": "لا اسمَ"}
+        conn = self.conn()
+        try:
+            sql = ("SELECT d.path AS dir, f.name FROM file f JOIN dir d ON d.id=f.dir_id "
+                   "WHERE f.name = ? AND f.gone_at IS NULL")
+            args: list = [name]
+            if shelf:
+                sql += " AND d.shelf = ?"
+                args.append(shelf)
+            rows = conn.execute(sql + " LIMIT 5", args).fetchall()
+        finally:
+            conn.close()
+        if not rows:
+            return {"ok": False, "error": "لم أجدِ الكتابَ في السجلّ — امسحْ أوّلًا"}
+        if len(rows) > 1:
+            return {"ok": False, "error": "اسمٌ ملتبسٌ في %d مواضع" % len(rows)}
+        path = rows[0]["dir"] + chr(92) + rows[0]["name"]
+        return self.open_path({"path": path, "mode": payload.get("mode") or "file"})
+
     def start_scan(self, payload: dict) -> dict:
         with _scan_lock:
             if _scan_state["running"]:
@@ -373,14 +405,42 @@ class Handler(BaseHTTPRequestHandler):
             return
 
     # ── أدواتُ الردّ ─────────────────────────────────────────────────────────
+    def _cors(self) -> None:
+        """يُسمَحُ لأصلٍ واحدٍ مسمًّى لا أكثر — ولا `*` البتّة."""
+        origin = self.headers.get("Origin") or ""
+        allowed = self.radar.web_origin
+        if allowed and origin == allowed:
+            self.send_header("Access-Control-Allow-Origin", origin)
+            self.send_header("Vary", "Origin")
+
     def _json(self, payload, code: int = 200) -> None:
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         self.send_response(code)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")
+        self._cors()
         self.end_headers()
         self.wfile.write(body)
+
+    def do_OPTIONS(self):
+        origin = self.headers.get("Origin") or ""
+        if not self.radar.web_origin or origin != self.radar.web_origin:
+            self.send_response(403)
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return
+        self.send_response(204)
+        self.send_header("Access-Control-Allow-Origin", origin)
+        self.send_header("Vary", "Origin")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "content-type, x-maktabat-local")
+        self.send_header("Access-Control-Max-Age", "600")
+        # كروم يمنعُ صفحةً عامّةً من نداءِ عنوانٍ محلّيٍّ بلا هذا الإذنِ الصريح
+        if (self.headers.get("Access-Control-Request-Private-Network") or "").lower() == "true":
+            self.send_header("Access-Control-Allow-Private-Network", "true")
+        self.send_header("Content-Length", "0")
+        self.end_headers()
 
     def _file(self, path: Path) -> None:
         if not path.is_file():
@@ -398,11 +458,23 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def _guard(self) -> bool:
-        """لا يُخدَمُ إلّا من هذا الجهاز — ولو أُسيءَ ضبطُ العنوانِ المُنصَتِ عليه."""
+        """
+        لا يُخدَمُ إلّا من هذا الجهاز. ويُستثنى أصلٌ واحدٌ مسمًّى في الإعدادات (صفحةُ
+        «مكتباتنا» الخاصّة) بشرطِ ترويسةٍ خاصّةٍ تُلزِمُ المتصفّحَ بإذنٍ مسبَق.
+        """
         host = (self.headers.get("Host") or "").split(":")[0]
         if host not in ("127.0.0.1", "localhost", "[::1]", "::1"):
             self._json({"error": "الرادارُ محلِّيٌّ فقط"}, 403)
             return False
+        origin = self.headers.get("Origin") or ""
+        if origin and origin not in ("http://127.0.0.1:%d" % self.radar.cfg.port,
+                                     "http://localhost:%d" % self.radar.cfg.port):
+            if not self.radar.web_origin or origin != self.radar.web_origin:
+                self._json({"error": "أصلٌ غيرُ مسموح"}, 403)
+                return False
+            if (self.headers.get("X-Maktabat-Local") or "") != "1":
+                self._json({"error": "ينقصُ إذنُ النداءِ المحلّيّ"}, 403)
+                return False
         return True
 
     # ── الطرقُ ───────────────────────────────────────────────────────────────
@@ -434,6 +506,9 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(schedule.status())
             elif route == "/api/key":
                 self._json(self.radar.key_state())
+            elif route == "/api/ping":
+                self._json({"ok": True, "app": "maktabat-radar",
+                            "alive": ev.alive(), "port": self.radar.cfg.port})
             elif route == "/api/scan/status":
                 self._json(self.radar.scan_status())
             elif route == "/api/export.csv":
@@ -467,6 +542,8 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if route == "/api/open":
                 self._json(self.radar.open_path(payload))
+            elif route == "/api/open_by_name":
+                self._json(self.radar.open_by_name(payload))
             elif route == "/api/scan":
                 self._json(self.radar.start_scan(payload))
             elif route == "/api/key":
