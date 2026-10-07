@@ -446,11 +446,48 @@
     } catch (e) { $('#sched-note').textContent = '⛔ ' + e.message; }
   });
 
+  // ── مفتاحُ الصفحةِ الخاصّةِ ورفعُ اللقطة ─────────────────────────────────
+  async function refreshKey() {
+    try {
+      const st = await api('/api/key');
+      $('#key-note').textContent = st.exists
+        ? '✓ المفتاحُ محفوظٌ على جهازك — والمسحُ الدوريُّ يرفعُ اللقطةَ وحدَه. (اكتبِ المفتاحَ نفسَه في إعداداتِ المشروع على كلاودفلير.)'
+        : 'لم يُكتَبِ المفتاحُ بعد. اكتبْه هنا واكتبِ المثلَ في إعداداتِ المشروع على كلاودفلير، فتعملَ صفحةُ /maktabat.';
+    } catch (e) { $('#key-note').textContent = e.message; }
+  }
+
+  $('#key-save').addEventListener('click', async () => {
+    const box = $('#skey');
+    const key = box.value;
+    box.value = '';            // لا يبقى المفتاحُ في الحقلِ بعد الحفظ
+    $('#key-note').textContent = 'جارٍ الحفظ…';
+    try {
+      const out = await api('/api/key', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key }) });
+      $('#key-note').textContent = out.ok
+        ? (out.cleared ? '✓ مُحي المفتاح.' : '✓ حُفِظ على جهازك وحدَه.')
+        : '⛔ ' + (out.error || 'تعذّر الحفظ');
+      setTimeout(refreshKey, 900);
+    } catch (e) { $('#key-note').textContent = '⛔ ' + e.message; }
+  });
+
+  $('#snap-now').addEventListener('click', async () => {
+    const btn = $('#snap-now');
+    btn.disabled = true;
+    $('#key-note').textContent = 'جارٍ بناءُ اللقطةِ ورفعُها…';
+    try {
+      const out = await api('/api/snapshot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      $('#key-note').textContent = out.ok
+        ? `✓ رُفعت — ${num(out.arrivals)} واصلًا و${num(out.gone)} مفقودًا (${num((out.sent && out.sent.bytes) || 0)} بايت). افتحْ radar.basaere.com/maktabat`
+        : '⛔ ' + out.error;
+    } catch (e) { $('#key-note').textContent = '⛔ ' + e.message; } finally { btn.disabled = false; }
+  });
+
   // ── الإقلاع ─────────────────────────────────────────────────────────────
   recall();
   document.querySelectorAll('.mr-measure button').forEach((b) => b.classList.toggle('on', b.dataset.measure === S.measure));
   document.querySelectorAll('.mr-lists button').forEach((b) => b.classList.toggle('on', b.dataset.list === S.list));
   refreshSchedule();
+  refreshKey();
   refreshState().then(() => {
     load();
     api('/api/scan/status').then((st) => { if (st.running) { $('#scan').disabled = true; $('#scan-log').hidden = false; pollScan(); } });

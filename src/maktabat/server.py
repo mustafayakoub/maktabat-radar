@@ -24,7 +24,7 @@ import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from . import arabic, config as conf, db, everything as ev, scan as scanner, schedule
+from . import arabic, config as conf, db, everything as ev, scan as scanner, schedule, snapshot
 
 WEB = Path(__file__).resolve().parents[2] / "web"
 MAX_PAGE = 500
@@ -237,6 +237,41 @@ class Radar:
         except Exception as exc:
             return {"ok": False, "error": str(exc)}
 
+    # ── مفتاحُ الصفحةِ الخاصّة ولقطتُها ───────────────────────────────────────
+    def key_state(self) -> dict:
+        """هل كُتِبَ المفتاح؟ — لا تُعادُ قيمتُه أبدًا، الوجودُ فقط."""
+        key = snapshot.read_key()
+        return {"exists": bool(key), "path": str(snapshot.KEY_FILE)}
+
+    def save_key(self, payload: dict) -> dict:
+        """
+        يكتبُ المفتاحَ في `secret.key` كما كتبه المؤلّفُ في صفحتِه المحلّيّة.
+        ⛔ لا يُطبَعُ ولا يُسجَّلُ ولا يُعادُ في أيِّ ردّ — يُكتَبُ ويُنسى.
+        """
+        key = (payload.get("key") or "").strip()
+        if not key:
+            if snapshot.KEY_FILE.exists():
+                snapshot.KEY_FILE.unlink()
+                return {"ok": True, "cleared": True}
+            return {"ok": False, "error": "لا مفتاحَ مكتوب"}
+        if len(key) < 8:
+            return {"ok": False, "error": "المفتاحُ قصيرٌ — ثمانيةُ محارفَ فأكثر"}
+        snapshot.KEY_FILE.write_text(key + chr(10), encoding="utf-8")
+        return {"ok": True, "length": len(key)}
+
+    def push_snapshot(self, payload: dict) -> dict:
+        key = snapshot.read_key()
+        if not key:
+            return {"ok": False, "error": "اكتبِ المفتاحَ أوّلًا"}
+        try:
+            data = snapshot.build(self.cfg)
+            snapshot.write(data)
+            out = snapshot.push(data, payload.get("url") or "https://radar.basaere.com", key)
+            return {"ok": True, "sent": out,
+                    "arrivals": len(data["arrivals"]), "gone": len(data["gone"])}
+        except Exception as exc:
+            return {"ok": False, "error": "%s: %s" % (type(exc).__name__, exc)}
+
     def start_scan(self, payload: dict) -> dict:
         with _scan_lock:
             if _scan_state["running"]:
@@ -360,6 +395,8 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(self.radar.shelves(params))
             elif route == "/api/schedule":
                 self._json(schedule.status())
+            elif route == "/api/key":
+                self._json(self.radar.key_state())
             elif route == "/api/scan/status":
                 self._json(self.radar.scan_status())
             elif route == "/api/export.csv":
@@ -395,6 +432,10 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(self.radar.open_path(payload))
             elif route == "/api/scan":
                 self._json(self.radar.start_scan(payload))
+            elif route == "/api/key":
+                self._json(self.radar.save_key(payload))
+            elif route == "/api/snapshot":
+                self._json(self.radar.push_snapshot(payload))
             elif route == "/api/schedule":
                 if payload.get("remove"):
                     self._json(schedule.remove())
