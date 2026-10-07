@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import json
+import re
 import time
 import urllib.request
 from pathlib import Path
@@ -50,17 +51,54 @@ def _safe_root(r) -> dict:
     return out
 
 
+def _walk(node, path=()):
+    """يمرُّ على كلِّ قيمةٍ نصّيّةٍ في اللقطةِ ومعها موضعُها."""
+    if isinstance(node, dict):
+        for k, v in node.items():
+            yield from _walk(v, path + (str(k),))
+    elif isinstance(node, (list, tuple)):
+        for item in node:
+            yield from _walk(item, path)
+    elif isinstance(node, str):
+        yield path, node
+
+
+# حقولٌ تحملُ أسماءَ ملفّاتٍ وضعها المؤلّفُ — كلمةٌ عامّةٌ فيها عنوانٌ لا مسار
+_NAME_FIELDS = {"n"}
+_SEP = (chr(92), "/")
+
+
 def _assert_clean(payload: dict, cfg: conf.Config) -> None:
-    """حارسٌ في الأداةِ لا في المراجعة: لا يخرجُ جزءٌ من مسارِ جذرٍ ولا فاصلُ مجلّدات."""
-    blob = json.dumps(payload, ensure_ascii=False)
-    needles = set()
+    """حارسٌ في الأداةِ لا في المراجعة — ويرفعُ موضعَ التسريبِ لا مجرّدَ وجودِه."""
+    # أسماءُ الرفوفِ **هي** أسماءُ مجلّداتٍ بالتصميم (اختارها المؤلّف)، فمنعُ كلِّ مقطعٍ
+    # من مسارٍ محلّيٍّ يرفضُ رفًّا مشروعًا اسمُه «Users» مثلًا. المقاطعُ الممنوعةُ هي
+    # هُويّةُ مشاركةِ الشبكةِ وحدَها (الخادمُ والمشاركة) — وهي التي سرّبت «m21» من قبل،
+    # ولا تصلحُ اسمَ رفٍّ أبدًا. وما عداها يكفيه منعُ فاصلِ المسارِ وصيغةِ القرص.
+    segs = set()
     for root in cfg.roots:
-        for part in root.path.replace("/", chr(92)).split(chr(92)):
-            if len(part) > 2 and not part.endswith(":"):
-                needles.add(part)
-    found = sorted(n for n in needles if n in blob)
-    if found:
-        raise ValueError("اللقطةُ تحملُ أجزاءَ مسار: %s" % "، ".join(found))
+        p = root.path.replace("/", chr(92))
+        if p.startswith(chr(92) * 2):
+            for part in p[2:].split(chr(92))[:2]:
+                if part:
+                    segs.add(part.casefold())
+
+    leaks = []
+    for where, text in _walk(payload):
+        field = where[-1] if where else ""
+        # ① فاصلُ مسارٍ أو صيغةُ قرصٍ في أيِّ قيمةٍ كانت = مسارٌ تسرّب
+        if any(sep in text for sep in _SEP) or re.search(r"(?i)\b[a-z]:[\\/]", text):
+            leaks.append("%s ⟵ %s" % (".".join(where) or "?", text[:60]))
+            continue
+        # ② وأجزاءُ مسارِ الجذورِ في الحقولِ البنيويّةِ وحدَها
+        if field in _NAME_FIELDS:
+            continue
+        low = text.casefold()
+        hit = next((p for p in segs if p in low), None)
+        if hit:
+            leaks.append("%s ⟵ «%s» في %s" % (".".join(where) or "?", hit, text[:40]))
+
+    if leaks:
+        raise ValueError("اللقطةُ تحملُ مسارًا: " + " · ".join(leaks[:5]))
 
 
 def build(cfg: conf.Config | None = None) -> dict:
